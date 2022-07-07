@@ -1,0 +1,9 @@
+#! /bin/sh
+sudo docker run \
+--rm \
+-v /home/glubuntu/node_server/src/:/usr/projects/app/src/ \
+-p 3000:3000 \
+--name node_server \
+node_server
+
+
