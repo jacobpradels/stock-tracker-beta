@@ -2,7 +2,8 @@
 const express = require('express');
 const sessions = require('express-session');
 const mongoose = require('mongoose');
-const user = require('../models/user');
+const { findOne } = require('../models/user');
+let user = require('../models/user');
 const dotenv = require('dotenv').config()
 const app = express();
 
@@ -25,7 +26,7 @@ app.use(express.static(__dirname));
 
 
 var session;
-~
+
 app.get('/', (req,res) => {
     session = req.session;
     if (session.userid) {
@@ -35,6 +36,44 @@ app.get('/', (req,res) => {
     }
 });
 
+// ##############################
+// ######## REGISTRATION ########
+// ##############################
+app.get('/signup', (req,res) => {
+    session = req.session;
+    if (session.userid) {
+        res.redirect('/');
+    } else {
+        res.sendFile('views/register.html',{root:__dirname});
+    }
+})
+
+app.post('/register', (req,res) => {
+    let passw = req.body.password;
+    let usern = req.body.username;
+    let userExists = true;
+    var query = user.findOne({username: usern}, function(err, newUser) {
+        if (err) {
+            res.send('error');
+            throw err;
+        }
+        if (newUser) {
+            console.log('user already exists');
+        } else {
+            console.log('user doesnt exist');
+            var createUser = new user({
+                username: usern,
+                password: passw,
+            });
+            createUser.save(function(err) {if (err) throw err;});
+        }
+    })
+    res.redirect('/');
+})
+
+// ##############################
+// ############ LOGIN ###########
+// ##############################
 
 app.post('/login', (req,res) => {
     let usern= req.body.username;
@@ -60,28 +99,12 @@ app.post('/login', (req,res) => {
     })
 })
 
+// ##############################
+// ########### LOGOUT ###########
+// ##############################
+
 app.get('/logout', (req,res) => {
     req.session.destroy();
     res.redirect('/');
 });
 
-// Add new user
-// var testUser = new user({
-//     username: 'pradelsj',
-//     password: 'password'
-// });
-
-// Adding new user
-// testUser.save((err) => {
-//     if (err) throw err;
-// })
-
-// Authenticate user
-// user.findOne({username: 'pradelsj'}, (err,user) => {
-//     if (err) throw err;
-
-//     user.comparePassword('password', (err,isMatch) => {
-//         if (err) throw err;
-//         console.log('password', isMatch);
-// ;    })
-// })
