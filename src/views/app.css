@@ -1,11 +1,15 @@
 body {
     display: flex;
     justify-content: center;
+    flex-direction: column;
 }
 
 form {
     display: flex;
     flex-direction: column;
+    width: 25%;
+    margin: auto;
+    align-items: center;
 }
 
 .input-field {
@@ -27,4 +31,9 @@ form input[type="submit"] {
     border-radius: 4px;
     margin-top: 2rem;
     padding: 0.4rem;
+}
+
+.signup {
+    padding-top: 3rem;
+    margin: auto;
 }
