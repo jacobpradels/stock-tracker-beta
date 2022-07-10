@@ -1,5 +1,6 @@
 // Packages
 const express = require('express');
+const axios = require('axios');
 const sessions = require('express-session');
 const mongoose = require('mongoose');
 const { findOne } = require('../models/user');
@@ -108,3 +109,23 @@ app.get('/logout', (req,res) => {
     res.redirect('/');
 });
 
+app.get('/authenticate', (req,res) => {
+    let session = req.session
+    if (session.userid) {
+        res.sendFile("views/robinhood-auth.html",{root:__dirname});
+    } else {
+        res.redirect("/");
+    }
+})
+
+app.post('/authenticate', (req,res) => {
+    let data = {username: req.body.username, password: req.body.password};
+    axios.post('api.robinhood.com/api-token-auth/',data)
+        .then((res) => {
+            console.log(`Status: ${res.status}`);
+            console.log(`Data : `, res.data);
+        }).catch((err) => {
+            console.error(err);
+        })
+    res.redirect('/');
+})
