@@ -120,12 +120,27 @@ app.get('/authenticate', (req,res) => {
 
 app.post('/authenticate', (req,res) => {
     let data = {username: req.body.username, password: req.body.password};
-    axios.post('api.robinhood.com/api-token-auth/',data)
+    let config = {headers: {Accept: "application/json", Authorization: `Bearer ${process.env.ACCESS_TOKEN}`}};
+    axios.post('https://api.robinhood.com/api-token-auth/',data,config)
         .then((res) => {
-            console.log(`Status: ${res.status}`);
-            console.log(`Data : `, res.data);
+            // console.log(`Status: ${res.status}`);
+            console.log(`Data : ${res.data}`);
         }).catch((err) => {
+            // console.log("error");
             console.error(err);
         })
+    res.redirect('/');
+})
+
+app.get('/appleprice', (req,res) => {
+    let config = {headers: {Accept: "*/*",Authorization: 'Bearer ' + process.env.ACCESS_TOKEN}};
+    let host = "api.tdameritrade.com";
+    let request = "/v1/marketdata/AAPL/quotes?apikey="
+    axios.get(`https://${host}/${request}${process.env.CONSUMER_KEY}`,config)
+    .then((res) => {
+        console.log(`Symbol: ${res.data.AAPL.symbol}\nAsk Price:${res.data.AAPL.askPrice}`);
+    }).catch((err) => {
+        console.error(err);
+    })
     res.redirect('/');
 })
