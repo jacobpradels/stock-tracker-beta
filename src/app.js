@@ -3,6 +3,9 @@ const express = require('express');
 const axios = require('axios');
 const sessions = require('express-session');
 const mongoose = require('mongoose');
+const url = require('url');
+const https = require('https');
+const fs = require('fs');
 const { findOne } = require('../models/user');
 let user = require('../models/user');
 const dotenv = require('dotenv').config()
@@ -11,7 +14,16 @@ const app = express();
 // Variables
 const dbURI = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@stocktracker.py3hcvw.mongodb.net/users?retryWrites=true&w=majority`
 mongoose.connect(dbURI, {useNewUrlParser: true, useUnifiedTopology: true})
-    .then((result) => app.listen(3000, () => {console.log("Starting server on port 3000")}))
+    .then((result) =>  {
+        https
+            .createServer({
+                key: fs.readFileSync("key.pem"),
+                cert: fs.readFileSync("cert.pem"),
+            },app)
+            .listen(3000, ()=>{
+                console.log('server is running on port 3000');
+            })
+    })
     .catch((err) => console.log(err));
 
 app.use(sessions({
@@ -31,11 +43,36 @@ var session;
 app.get('/', (req,res) => {
     session = req.session;
     if (session.userid) {
-        res.send('Welcome! <a href=\'logout\'>click to logout</a>');
+        res.send('Welcome! <a href=\'logout\'>click to logout</a></a href=\'authenticate\'>click to authenticate</a>');
     } else {
         res.sendFile('views/index.html',{root:__dirname});
     }
 });
+
+app.post('/', (req,res) => {
+    const queryObject = url.parse(req.url, true).query;
+    console.log(queryObject);
+})
+
+app.get('/authenticate-tdameritrade',(req,res) => {
+    session = req.session;
+    if (session.userid) {
+        // Get code from URL
+        const queryObject = url.parse(req.url, true).query;
+        const code = queryObject.code;
+        // Add code to user session
+        // (Might not want to store this, should probably just use it to make API call to get refresh token/access token
+        // then store those inside of the user db)
+        session.code = code;
+        console.log(`${code} added to user ${session.userid}`);
+        // Make an API call to retrieve access token and refresh token
+
+        // Store access and refresh token in session/cookie
+
+        // Send user back to main page
+        res.redirect('/');
+    }
+})
 
 // ##############################
 // ######## REGISTRATION ########
@@ -111,26 +148,14 @@ app.get('/logout', (req,res) => {
 
 app.get('/authenticate', (req,res) => {
     let session = req.session
+    let auth_url = `https://auth.tdameritrade.com/auth?response_type=code&redirect_uri=${process.env.REDIRECT_URI_ENCODED}&client_id=${process.env.CONSUMER_KEY}%40AMER.OAUTHAP`;
     if (session.userid) {
-        res.sendFile("views/robinhood-auth.html",{root:__dirname});
+        res.redirect(auth_url);
     } else {
         res.redirect("/");
     }
 })
 
-app.post('/authenticate', (req,res) => {
-    let data = {username: req.body.username, password: req.body.password};
-    let config = {headers: {Accept: "application/json", Authorization: `Bearer ${process.env.ACCESS_TOKEN}`}};
-    axios.post('https://api.robinhood.com/api-token-auth/',data,config)
-        .then((res) => {
-            // console.log(`Status: ${res.status}`);
-            console.log(`Data : ${res.data}`);
-        }).catch((err) => {
-            // console.log("error");
-            console.error(err);
-        })
-    res.redirect('/');
-})
 
 app.get('/appleprice', (req,res) => {
     let config = {headers: {Accept: "*/*",Authorization: 'Bearer ' + process.env.ACCESS_TOKEN}};
